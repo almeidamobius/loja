@@ -1,6 +1,3 @@
-
 export class ListaDepoimentoDTO {
-    constructor(
-        readonly depoimento: string
-    )   {}
+  constructor(readonly depoimento: string) {}
 }

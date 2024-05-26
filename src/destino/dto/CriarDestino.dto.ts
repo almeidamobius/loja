@@ -1,15 +1,15 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class CriarDepoimentoDTO {
+export class CriarDestinoDTO {
   @IsString()
   @IsNotEmpty()
   foto: string;
 
   @IsString()
   @IsNotEmpty()
-  depoimento: string;
+  nome: string;
 
   @IsString()
   @IsNotEmpty()
-  nome: string;
+  preco: string;
 }
