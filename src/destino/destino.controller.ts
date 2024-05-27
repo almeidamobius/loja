@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { DestinoRepository } from './destino.repository';
 import { CriarDestinoDTO } from './dto/CriarDestino.dto';
@@ -29,29 +30,37 @@ export class DestinoController {
 
     this.destinoRepository.salvar(destinoEntity);
     return {
-      destino: new ListaDestinoDTO(destinoEntity.id),
+      id: new ListaDestinoDTO(destinoEntity.id),
+      destino: new ListaDestinoDTO(destinoEntity.nome),
       preco: new ListaDestinoDTO(destinoEntity.preco),
       mensagem: 'destino criado',
     };
   }
 
   @Get()
-  async ListaDestinos() {
-    const destinosSalvos = await this.destinoRepository.listar();
-    const destinosLista = destinosSalvos.map((destino) => {
-      return {
+  async listaOuFiltraDestinos(@Query('nome') nomeDestino?: string) {
+    try {
+      const destinos = nomeDestino
+        ? await this.destinoRepository.buscarPorNome(nomeDestino)
+        : await this.destinoRepository.listar();
+  
+      if (destinos.length === 0) {
+        return { mensagem: 'Nenhum destino foi encontrado' };
+      }
+  
+      return destinos.map(destino => ({
         foto: destino.foto,
         nome: destino.nome,
-        preco: destino.preco
-      }
-    });
-
-    return destinosLista;
+        preco: destino.preco,
+      }));
+    } catch (error) {
+      return { mensagem: 'Nenhum destino foi encontrado' };
+    }
   }
   @Put('/:id')
   async atualizaUsuario(
     @Param('id') id: string,
-    @Body() novosDados: AtualizaDestinoDTO, // Altere o tipo para AtualizaDestinoDTO
+    @Body() novosDados: AtualizaDestinoDTO, 
   ) {
     const destinoAtualizado = await this.destinoRepository.atualiza(
       id,
@@ -61,7 +70,7 @@ export class DestinoController {
       destino: destinoAtualizado,
       mensagem: 'Destino atualizado com sucesso',
     };
-}
+  }
 
   @Delete('/:id')
   async removeDestino(@Param('id') id: string) {
@@ -72,5 +81,6 @@ export class DestinoController {
       mensagem: 'Depoimento removido com sucesso',
     };
   }
-// eslint-disable-next-line prettier/prettier
+
+  
 }

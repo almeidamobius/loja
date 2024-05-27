@@ -1,65 +1,45 @@
-/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import { DestinoEntity } from './destino.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { DestinoEntity } from './destino.schema';
 
 @Injectable()
 export class DestinoRepository {
-  private destinos: DestinoEntity[] = [];
+  constructor(
+    @InjectModel(DestinoEntity.name) private destinoModel: Model<DestinoEntity>,
+  ) {}
 
-  async salvar(destino: DestinoEntity) {
-    this.destinos.push(destino);
+  async salvar(destino: DestinoEntity): Promise<DestinoEntity> {
+    const novoDestino = new this.destinoModel(destino);
+    return novoDestino.save();
   }
 
-  async listar() {
-    return this.destinos;
-  }
-
-  private buscaPorId(id: string) {
-    const possivelDestino = this.destinos.find(
-      (destinoSalvo) => destinoSalvo.id === id,
-    );
-
-    if (!possivelDestino) {
-      throw new Error('Usuário não existe');
-    }
-
-    return possivelDestino;
+  async listar(): Promise<DestinoEntity[]> {
+    return this.destinoModel.find().exec();
   }
 
   async atualiza(id: string, dadosDeAtualizacao: Partial<DestinoEntity>) {
-    const destinoId = this.buscaPorId(id);
+    const destino = await this.destinoModel.findById(id);
+    if (!destino) {
+      throw new Error('Destino não encontrado');
+    }
 
-    Object.entries(dadosDeAtualizacao).forEach(([chave, valor]) => {
-      if (chave === 'id') {
-        return;
-      }
-
-      destinoId[chave] = valor;
-    });
-
-    return destinoId;
+    Object.assign(destino, dadosDeAtualizacao);
+    await destino.save();
+    return destino;
   }
 
   async remove(id: string) {
-    const destinoId = this.buscaPorId(id);
-    this.destinos = this.destinos.filter((usuarioSalvo) => {
-      usuarioSalvo.id !== id;
-    });
-
-    return destinoId;
+    const result = await this.destinoModel.findByIdAndDelete(id);
+    if (!result) {
+      throw new Error('Destino não encontrado para remover');
+    }
+    return result;
   }
 
-  async findRandom(): Promise<DestinoEntity[]> {
-    const count = this.destinos.length;
-    if (count < 3) {
-      return count === 0 ? [] : this.destinos; // Retorna todos disponíveis se menos de 3
-    }
-
-    const randomDepoimentos = new Set<DestinoEntity>();
-    while (randomDepoimentos.size < 3) {
-      const randomIndex = Math.floor(Math.random() * count);
-      randomDepoimentos.add(this.destinos[randomIndex]);
-    }
-    return Array.from(randomDepoimentos);
+  async buscarPorNome(nome: string): Promise<DestinoEntity[]> {
+    return this.destinoModel
+      .find({ nome: { $regex: nome, $options: 'i' } })
+      .exec();
   }
 }
